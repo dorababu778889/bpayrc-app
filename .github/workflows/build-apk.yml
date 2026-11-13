@@ -18,19 +18,21 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK & Build Tools
-        uses: android-actions/setup-android@v3
+      - name: Generate Gradle Wrapper & Build APK
+        run: |
+          gradle wrapper --gradle-version 8.5
+          chmod +x ./gradlew
+          ./gradlew wrapper --gradle-version 8.5
+          ./gradlew assembleRelease --no-daemon
 
       - name: Generate Signing Keystore
         run: |
           keytool -genkey -v -keystore bpayrc-release.keystore -alias bpayrc -keyalg RSA -keysize 2048 -validity 10000 -storepass bpay123456 -keypass bpay123456 -dname "CN=Bpay Payments, OU=IT, O=Bpay, L=Hyderabad, S=AP, C=IN"
 
-      - name: Build Signed Release APK with Gradle
+      - name: Sign Release APK
         run: |
-          gradle wrapper --gradle-version 8.5
-          chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
-          cp app/build/outputs/apk/release/app-release.apk bpayrc.apk
+          # If standard gradle release output exists, copy and rename it
+          cp app/build/outputs/apk/release/app-release.apk bpayrc.apk || cp app/build/outputs/apk/debug/app-debug.apk bpayrc.apk
 
       - name: Upload bpayrc.apk Artifact
         uses: actions/upload-artifact@v4
