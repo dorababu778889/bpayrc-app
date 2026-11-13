@@ -12,25 +12,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Auto-Fix Manifest and Java String Quote
+        run: |
+          python3 -c '
+          p1 = "app/src/main/java/in/bpaypan/ccpay/MainActivity.java"
+          s1 = open(p1).read().replace("}); }); }\n    var apkWrap", "}); }); }\" +\n                        \"    var apkWrap")
+          open(p1, "w").write(s1)
+          p2 = "app/src/main/AndroidManifest.xml"
+          s2 = open(p2).read().replace("package=\"in.bpaypan.ccpay\"", "")
+          open(p2, "w").write(s2)
+          '
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle 8.5
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Generate Signing Keystore
         run: |
+          rm -f bpayrc-release.keystore
           keytool -genkey -v -keystore bpayrc-release.keystore -alias bpayrc -keyalg RSA -keysize 2048 -validity 10000 -storepass bpay123456 -keypass bpay123456 -dname "CN=Bpay Payments, OU=IT, O=Bpay, L=Hyderabad, S=AP, C=IN"
 
-      - name: Build APK with Gradle
+      - name: Build Signed Release APK
         run: |
-          ./gradlew assembleRelease --no-daemon || ./gradlew assembleDebug --no-daemon
-
-      - name: Locate and Copy APK
-        run: |
+          gradle assembleRelease --no-daemon
           find app/build/outputs/apk/ -name "*.apk" -exec cp {} bpayrc.apk \;
 
       - name: Upload bpayrc.apk Artifact
