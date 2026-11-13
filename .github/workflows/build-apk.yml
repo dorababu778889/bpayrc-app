@@ -12,15 +12,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Auto-Fix Manifest and Java String Quote
+      - name: Auto-Fix Manifest, Java String, and Kotlin Duplicate Classes
         run: |
           python3 -c '
           p1 = "app/src/main/java/in/bpaypan/ccpay/MainActivity.java"
           s1 = open(p1).read().replace("}); }); }\n    var apkWrap", "}); }); }\" +\n                        \"    var apkWrap")
           open(p1, "w").write(s1)
+
           p2 = "app/src/main/AndroidManifest.xml"
           s2 = open(p2).read().replace("package=\"in.bpaypan.ccpay\"", "")
           open(p2, "w").write(s2)
+
+          p3 = "app/build.gradle"
+          s3 = open(p3).read()
+          fix = """configurations.all {
+              exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+              exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+          }
+          android {
+              lint { checkReleaseBuilds false; abortOnError false }"""
+          if "kotlin-stdlib-jdk8" not in s3:
+              s3 = s3.replace("android {", fix, 1)
+              open(p3, "w").write(s3)
           '
 
       - name: Set up JDK 17
