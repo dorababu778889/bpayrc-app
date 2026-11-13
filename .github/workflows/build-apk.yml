@@ -18,14 +18,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Generate Signing Keystore
         run: |
           keytool -genkey -v -keystore bpayrc-release.keystore -alias bpayrc -keyalg RSA -keysize 2048 -validity 10000 -storepass bpay123456 -keypass bpay123456 -dname "CN=Bpay Payments, OU=IT, O=Bpay, L=Hyderabad, S=AP, C=IN"
 
       - name: Build Signed Release APK
         run: |
-          chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk bpayrc.apk
 
       - name: Upload bpayrc.apk Artifact
